@@ -11,6 +11,25 @@
             font-family: 'Inter', sans-serif;
             background-color: #1a202c;
         }
+        .chat-container-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: auto 1fr auto;
+            height: 80vh;
+        }
+        @media (min-width: 768px) {
+            .chat-container-grid {
+                grid-template-columns: 1fr 2fr;
+                grid-template-rows: 1fr auto;
+            }
+            .chat-messages {
+                border-bottom-left-radius: 0.75rem;
+            }
+            .user-list-container {
+                border-top-right-radius: 0.75rem;
+                border-bottom-right-radius: 0.75rem;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 flex items-center justify-center min-h-screen p-4">
@@ -48,44 +67,66 @@
         </div>
 
         <!-- Chat Section -->
-        <div id="chatSection" class="flex flex-col h-[80vh] hidden">
-            <!-- Header -->
-            <div class="flex-shrink-0 p-4 border-b border-gray-700 flex items-center justify-between bg-gray-800">
-                <h2 id="chatTitle" class="text-xl font-bold text-purple-400"></h2>
-                <button id="logoutButton" class="text-gray-400 hover:text-red-500 transition duration-300 text-sm">Change Name</button>
+        <div id="chatSection" class="flex flex-col md:grid chat-container-grid w-full h-full hidden">
+            <!-- User List on the left for desktop -->
+            <div id="userListContainer" class="hidden md:block bg-gray-700 p-4 overflow-y-auto">
+                <h3 class="text-lg font-bold text-purple-400 mb-4">Online Users</h3>
+                <ul id="userList" class="space-y-2"></ul>
             </div>
 
-            <!-- Messages List -->
-            <div id="messagesContainer" class="flex-1 p-4 overflow-y-auto space-y-4">
-                <!-- Messages will be injected here -->
-            </div>
+            <!-- Chat and Header on the right for desktop -->
+            <div class="col-span-1 md:col-span-2 flex flex-col h-full">
+                <!-- Header -->
+                <div class="flex-shrink-0 p-4 border-b border-gray-700 flex items-center justify-between bg-gray-800">
+                    <h2 id="chatTitle" class="text-xl font-bold text-purple-400"></h2>
+                    <button id="logoutButton" class="text-gray-400 hover:text-red-500 transition duration-300 text-sm">Change Name</button>
+                </div>
 
-            <!-- Message Input & Send Button -->
-            <div class="flex-shrink-0 p-4 border-t border-gray-700 bg-gray-800">
-                <form id="messageForm" class="flex items-center space-x-2">
-                    <input type="text" id="messageInput" placeholder="Type a message..." required
-                           class="flex-1 p-3 rounded-full bg-gray-700 text-gray-100 border border-gray-600 focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50 transition duration-300">
-                    <button type="submit"
+                <!-- Messages List -->
+                <div id="messagesContainer" class="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-900">
+                    <!-- Messages will be injected here -->
+                </div>
+
+                <!-- Message Input & Send Button -->
+                <div class="flex-shrink-0 p-4 border-t border-gray-700 bg-gray-800">
+                    <form id="messageForm" class="flex items-center space-x-2">
+                        <input type="text" id="messageInput" placeholder="Type a message..." required
+                            class="flex-1 p-3 rounded-full bg-gray-700 text-gray-100 border border-gray-600 focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50 transition duration-300">
+                        <button type="submit"
                             class="p-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white transform hover:scale-110 transition duration-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
-                    </button>
-                </form>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-
+    
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, limit, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
+        // --- START OF CONFIGURATION ---
+        // IMPORTANT: Replace the placeholder below with your own Firebase project configuration.
+        // You can get this from your Firebase project settings.
+        const firebaseConfig = {
+  apiKey: "AIzaSyCl3J9WQZDkJe5JzxYc4Z3n85myJfEghdA",
+  authDomain: "scahsgamingclub.firebaseapp.com",
+  projectId: "scahsgamingclub",
+  storageBucket: "scahsgamingclub.firebasestorage.app",
+  messagingSenderId: "303405927748",
+  appId: "1:303405927748:web:d7e30d729aada78c991b11",
+  measurementId: "G-PSPJQYBS5Q"
+};
+        // --- END OF CONFIGURATION ---
+
         // Global variables provided by the Canvas environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const appId = firebaseConfig.projectId;
+        const initialAuthToken = null;
 
         // UI Elements
         const loadingOverlay = document.getElementById('loadingOverlay');
@@ -101,6 +142,7 @@
         const messageInput = document.getElementById('messageInput');
         const logoutButton = document.getElementById('logoutButton');
         const usernameInput = document.getElementById('username');
+        const userList = document.getElementById('userList');
 
         // Firebase Initialization
         let auth, db;
@@ -124,9 +166,10 @@
                             isAuthReady = true;
                             // Check if username is already set, if not, show auth screen
                             if (loggedInUser) {
-                                chatTitle.textContent = `Welcome, ${loggedInUser.username}!`;
+                                chatTitle.textContent = `Welcome, ${loggedInUser.username}! Your ID: ${loggedInUser.userId}`;
                                 showChat();
                                 fetchMessages();
+                                fetchUserList();
                             } else {
                                 showAuth();
                             }
@@ -182,9 +225,10 @@
             }
 
             loggedInUser = { username: username, userId: auth.currentUser.uid };
-            chatTitle.textContent = `Welcome, ${loggedInUser.username}!`;
+            chatTitle.textContent = `Welcome, ${loggedInUser.username}! Your ID: ${loggedInUser.userId}`;
             showChat();
             fetchMessages();
+            fetchUserList();
         });
 
         // "Change Name" button
